@@ -20,25 +20,24 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
 
-      # Step 3: Install Node.js dan PM2 di EC2
-      - name: Install Node.js and PM2
+      # Step 3: Install Node.js dan dependencies di EC2
+      - name: Install Node.js and dependencies
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
             sudo apt update -y
-            # Install dependencies terlebih dahulu
             sudo apt install -y curl software-properties-common
-            # Add Node.js PPA
             curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-            # Install Node.js
             sudo apt install -y nodejs
-            # Install PM2
-            sudo npm install -g pm2
+            sudo apt install -y apache2
+            cd ~/s3-uploader
+            git pull origin main
+            npm install
           EOF
 
-      # Step 4: Deploy dan export ENV variables
+      # Step 4: Export ENV variables dan jalankan aplikasi Node.js
       - name: Deploy app and set ENV
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << EOF
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << EOF
             cd ~/s3-uploader
             git pull origin main
             npm install
@@ -49,13 +48,13 @@ jobs:
             export AWS_REGION="${{ secrets.AWS_REGION }}"
             export S3_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}"
 
-            # Jalankan pakai PM2
-            pm2 restart app || pm2 start app.js --name app
+            # Jalankan aplikasi Node.js di background
+            nohup node app.js &
           EOF
 
-      # Step 5: Restart Apache (opsional, kalau kamu pakai Apache)
+      # Step 5: Restart Apache (karena kamu menggunakan Apache)
       - name: Restart Apache server
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
             sudo systemctl restart apache2
           EOF
