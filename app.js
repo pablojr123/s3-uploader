@@ -1,22 +1,23 @@
 const express = require('express');
-const multer = require('multer');
 const AWS = require('aws-sdk');
+const multer = require('multer');
 require('dotenv').config();
 
 const app = express();
 
-// Set multer untuk memproses file upload menggunakan memory storage
-const storage = multer.memoryStorage(); // Gunakan memory storage supaya file disimpan langsung di memory
-const upload = multer({ storage: storage });
-
+// Inisialisasi AWS S3
 const s3 = new AWS.S3({
   region: process.env.AWS_REGION,
 });
 
+// Gunakan multer dengan memory storage, agar file langsung di-handle dalam memory
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 
-// Endpoint untuk menampilkan file yang ada di S3
+// Halaman utama untuk menampilkan file dari S3
 app.get('/', async (req, res) => {
   const params = {
     Bucket: process.env.S3_BUCKET_NAME,
@@ -30,26 +31,22 @@ app.get('/', async (req, res) => {
   }
 });
 
-// Endpoint untuk upload file
+// Endpoint untuk upload file ke S3
 app.post('/upload', upload.single('file'), (req, res) => {
-  // Pastikan file ada di memory (req.file.buffer)
-  if (!req.file) {
-    return res.send("No file uploaded!");
-  }
+  const fileContent = req.file.buffer;  // File langsung di-memory
 
   const params = {
     Bucket: process.env.S3_BUCKET_NAME,
-    Key: req.file.originalname, // Gunakan nama file yang diupload
-    Body: req.file.buffer, // Menggunakan file yang ada di memory
-    ContentType: req.file.mimetype, // Tentukan jenis konten file
-    ACL: 'public-read', // Atur akses sesuai kebutuhan (public-read jika ingin file bisa diakses publik)
+    Key: req.file.originalname,  // Gunakan nama asli file sebagai key di S3
+    Body: fileContent,  // Konten file dari memory
   };
 
+  // Upload file ke S3
   s3.upload(params, (err, data) => {
     if (err) {
       return res.send("Upload gagal: " + err);
     }
-    res.redirect('/'); // Setelah upload berhasil, redirect ke halaman utama
+    res.redirect('/');  // Kembali ke halaman utama setelah berhasil upload
   });
 });
 
