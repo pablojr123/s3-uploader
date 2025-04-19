@@ -7,7 +7,7 @@ require('dotenv').config();
 
 const app = express();
 
-// Set multer untuk memproses file upload
+// Set multer untuk memproses file upload menggunakan memory storage
 const storage = multer.memoryStorage(); // Gunakan memory storage supaya file disimpan langsung di memory
 const upload = multer({ storage: storage });
 
@@ -32,6 +32,7 @@ app.get('/', async (req, res) => {
 });
 
 app.post('/upload', upload.single('file'), (req, res) => {
+  // Jika multer berhasil menangani upload, maka req.file akan berisi file yang ada di memory
   const params = {
     Bucket: process.env.S3_BUCKET_NAME,
     Key: req.file.originalname, // Gunakan nama file yang diupload
