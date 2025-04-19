@@ -1,0 +1,51 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  # Ganti dengan branch yang kamu gunakan
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repositori
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Step 2: Setup SSH untuk koneksi ke EC2
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+
+      # Step 3: Install Node.js dan PM2 di EC2 (jika diperlukan)
+      - name: Install Node.js and PM2
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            # Update server dan install nodejs dan npm
+            sudo apt update
+            sudo apt install -y nodejs npm
+            # Install PM2 untuk mengelola aplikasi Node.js
+            sudo npm install -g pm2
+          EOF
+
+      # Step 4: Install dependensi aplikasi di EC2
+      - name: Install dependencies
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            # Arahkan ke direktori aplikasi
+            cd ~/s3-uploader  # Sesuaikan dengan path ke aplikasi kamu di EC2
+            git pull origin main  # Pull perubahan terbaru dari GitHub
+            npm install  # Install dependensi jika ada perubahan
+            pm2 restart app  # Jika kamu menggunakan PM2 untuk menjalankan aplikasi
+          EOF
+
+      # Step 5: Restart Apache untuk memastikan perubahan diterapkan
+      - name: Restart Apache server
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            # Restart Apache untuk menerapkan perubahan
+            sudo systemctl restart apache2
+          EOF
