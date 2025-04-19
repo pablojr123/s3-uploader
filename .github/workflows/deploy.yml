@@ -23,7 +23,7 @@ jobs:
       # Step 3: Install Node.js dan PM2 di EC2
       - name: Install Node.js and PM2
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
             sudo apt update -y
             # Install dependencies terlebih dahulu
             sudo apt install -y curl software-properties-common
@@ -38,7 +38,7 @@ jobs:
       # Step 4: Deploy dan export ENV variables
       - name: Deploy app and set ENV
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << EOF
             cd ~/s3-uploader
             git pull origin main
             npm install
@@ -56,6 +56,6 @@ jobs:
       # Step 5: Restart Apache (opsional, kalau kamu pakai Apache)
       - name: Restart Apache server
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
             sudo systemctl restart apache2
           EOF
