@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My S3 Blog Upload</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container py-5">
+  <h1 class="mb-4">Upload File ke S3</h1>
+  <form action="/upload" method="POST" enctype="multipart/form-data" class="mb-4">
+    <input type="file" name="file" class="form-control mb-3" required>
+    <button class="btn btn-primary" type="submit">Upload</button>
+  </form>
+
+  <h2>File yang Sudah Terupload:</h2>
+  <ul class="list-group">
+    <% files.forEach(file => { %>
+      <li class="list-group-item">
+        <!-- Buat link untuk mendownload file -->
+        <a href="https://<%= process.env.S3_BUCKET_NAME %>.s3.<%= process.env.AWS_REGION %>.amazonaws.com/<%= file.Key %>" target="_blank">
+          <%= file.Key %>
+        </a>
+      </li>
+    <% }) %>
+  </ul>  
+</body>
+</html>
