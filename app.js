@@ -1,18 +1,15 @@
 const express = require('express');
 const multer = require('multer');
 const AWS = require('aws-sdk');
-const fs = require('fs');
-const path = require('path');
 require('dotenv').config();
 
 const app = express();
-
-// Set multer untuk memproses file upload
-const storage = multer.memoryStorage(); // Gunakan memory storage supaya file disimpan langsung di memory
-const upload = multer({ storage: storage });
+const upload = multer({ storage: multer.memoryStorage() }); // ✅ langsung ke memory
 
 const s3 = new AWS.S3({
   region: process.env.AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
 app.set('view engine', 'ejs');
@@ -34,10 +31,8 @@ app.get('/', async (req, res) => {
 app.post('/upload', upload.single('file'), (req, res) => {
   const params = {
     Bucket: process.env.S3_BUCKET_NAME,
-    Key: req.file.originalname, // Gunakan nama file yang diupload
-    Body: req.file.buffer, // Menggunakan file yang ada di memory
-    ContentType: req.file.mimetype, // Tentukan jenis konten file
-    ACL: 'public-read', // Atur akses sesuai kebutuhan (public-read jika ingin file bisa diakses publik)
+    Key: req.file.originalname,
+    Body: req.file.buffer, // ✅ dari memory langsung
   };
 
   s3.upload(params, (err, data) => {
