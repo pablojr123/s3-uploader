@@ -20,24 +20,23 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
 
-      # Step 3: Install Node.js dan dependencies di EC2
-      - name: Install Node.js and dependencies
+      # Step 3: Install Node.js di EC2
+      - name: Install Node.js
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
             sudo apt update -y
+            # Install dependencies terlebih dahulu
             sudo apt install -y curl software-properties-common
+            # Add Node.js PPA
             curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+            # Install Node.js
             sudo apt install -y nodejs
-            sudo apt install -y apache2
-            cd ~/s3-uploader
-            git pull origin main
-            npm install
           EOF
 
-      # Step 4: Export ENV variables dan jalankan aplikasi Node.js
+      # Step 4: Deploy dan export ENV variables
       - name: Deploy app and set ENV
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << EOF
             cd ~/s3-uploader
             git pull origin main
             npm install
@@ -48,13 +47,13 @@ jobs:
             export AWS_REGION="${{ secrets.AWS_REGION }}"
             export S3_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}"
 
-            # Jalankan aplikasi Node.js di background
-            nohup node app.js &
+            # Jalankan aplikasi dengan Node.js
+            node app.js &
           EOF
 
-      # Step 5: Restart Apache (karena kamu menggunakan Apache)
+      # Step 5: Restart Apache server
       - name: Restart Apache server
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
             sudo systemctl restart apache2
           EOF
