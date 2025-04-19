@@ -1,8 +1,6 @@
 const express = require('express');
 const multer = require('multer');
 const AWS = require('aws-sdk');
-const fs = require('fs');
-const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -18,6 +16,7 @@ const s3 = new AWS.S3({
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 
+// Endpoint untuk menampilkan file yang ada di S3
 app.get('/', async (req, res) => {
   const params = {
     Bucket: process.env.S3_BUCKET_NAME,
@@ -31,8 +30,13 @@ app.get('/', async (req, res) => {
   }
 });
 
+// Endpoint untuk upload file
 app.post('/upload', upload.single('file'), (req, res) => {
-  // Jika multer berhasil menangani upload, maka req.file akan berisi file yang ada di memory
+  // Pastikan file ada di memory (req.file.buffer)
+  if (!req.file) {
+    return res.send("No file uploaded!");
+  }
+
   const params = {
     Bucket: process.env.S3_BUCKET_NAME,
     Key: req.file.originalname, // Gunakan nama file yang diupload
@@ -45,7 +49,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
     if (err) {
       return res.send("Upload gagal: " + err);
     }
-    res.redirect('/');
+    res.redirect('/'); // Setelah upload berhasil, redirect ke halaman utama
   });
 });
 
